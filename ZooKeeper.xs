@@ -249,12 +249,13 @@ static zk_watch_t *_zk_acquire_watch(pTHX)
 static void _zk_release_watch(pTHX_ zk_watch_t *watch, int list)
 {
     if (list) {
+        zk_watch_t *prev = watch->prev;
         if (watch->prev) {
             watch->prev->next = watch->next;
             watch->prev = NULL;
         }
         if (watch->next) {
-            watch->next->prev = watch->prev;
+            watch->next->prev = prev;
             watch->next = NULL;
         }
     }
@@ -278,7 +279,7 @@ static unsigned int _zk_release_watches(pTHX_ zk_watch_t *first_watch,
 
         if (!final) {
             pthread_mutex_lock(&watch->mutex);
-            done = watch->done;
+            done = watch->done && watch->event_type != ZOO_SESSION_EVENT;
             pthread_mutex_unlock(&watch->mutex);
         }
 
@@ -1340,14 +1341,15 @@ zk_create(zkh, path, buf, ...)
         }
 
         if (ret == ZOK) {
+            size_t path_buf_len = strlen(path_buf);
             ST(0) = sv_newmortal();
 #ifdef SV_HAS_TRAILING_NUL
-            sv_usepvn_flags(ST(0), path_buf, strlen(path_buf),
+            sv_usepvn_flags(ST(0), path_buf, path_buf_len,
                             SV_HAS_TRAILING_NUL);
 #else
-            sv_usepvn(ST(0), path_buf, strlen(path_buf));
+            sv_usepvn(ST(0), path_buf, path_buf_len);
 #endif
-            SvCUR_set(ST(0), strlen(path_buf));
+            SvCUR_set(ST(0), path_buf_len);
 
             XSRETURN(1);
         }
@@ -2657,6 +2659,9 @@ zkw_wait(zkwh, ...)
         }
 
         done = watch->done;
+        if (watch->event_type == ZOO_SESSION_EVENT) {
+            watch->done = 0;
+        }
 
         pthread_mutex_unlock(&watch->mutex);
 
