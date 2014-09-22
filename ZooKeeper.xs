@@ -694,6 +694,8 @@ zk_acl_constant(alias=Nullch)
     PPCODE:
         if (!ix && !alias) {
             alias = GvNAME(CvGV(cv));
+        } else if (!alias) {
+            alias = ""; // make sure alias pointer is defined for strEQ
         }
 
         if (ix == 1 || strEQ(alias, "ZOO_OPEN_ACL_UNSAFE")) {
