@@ -2606,6 +2606,7 @@ zkw_wait(zkwh, ...)
         unsigned int timeout;
         struct timeval end_timeval;
         int i, done;
+        struct timespec wait_timespec;
     PPCODE:
         watch = _zkw_get_handle_outer(aTHX_ zkwh, NULL);
 
@@ -2632,27 +2633,25 @@ zkw_wait(zkwh, ...)
         end_timeval.tv_sec += timeout / 1000;
         end_timeval.tv_usec += (timeout % 1000) * 1000;
 
+        wait_timespec.tv_sec = end_timeval.tv_sec;
+        wait_timespec.tv_nsec = end_timeval.tv_usec * 1000;
+
         pthread_mutex_lock(&watch->mutex);
 
         while (!watch->done) {
             struct timeval curr_timeval;
-            struct timespec wait_timespec;
 
             gettimeofday(&curr_timeval, NULL);
 
-            wait_timespec.tv_sec = end_timeval.tv_sec - curr_timeval.tv_sec;
-            wait_timespec.tv_nsec =
-                (end_timeval.tv_usec - curr_timeval.tv_usec) * 1000;
+		if (end_timeval.tv_sec < curr_timeval.tv_sec) {
+			break;
+		}
 
-            if (wait_timespec.tv_nsec < 0) {
-                --wait_timespec.tv_sec;
-                wait_timespec.tv_nsec += 1000000000;
-            }
-
-            if (wait_timespec.tv_sec < 0 ||
-                (wait_timespec.tv_sec == 0 && wait_timespec.tv_nsec <= 0)) {
-                break;
-            }
+		if (end_timeval.tv_sec == curr_timeval.tv_sec) {
+			if (end_timeval.tv_usec <= curr_timeval.tv_usec) {
+				break;
+			}
+		}
 
             pthread_cond_timedwait(&watch->cond, &watch->mutex,
                                    &wait_timespec);
