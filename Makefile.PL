@@ -53,10 +53,13 @@ if ($?) {
 }
 
 WriteMakefile(
-    'INC'          => "$zk_inc_paths-I.",
-    'LIBS'         => [ "$zk_lib_paths-lzookeeper_mt" ],
-    'NAME'         => 'Net::ZooKeeper',
-    'VERSION_FROM' => 'ZooKeeper.pm',
-    'clean'        => { 'FILES' => 'build/check_zk_version.o' }
+    'INC'           => "$zk_inc_paths-I.",
+    'LIBS'          => [ "$zk_lib_paths-lzookeeper_mt" ],
+    'NAME'          => 'Net::ZooKeeper',
+    'VERSION_FROM'  => 'ZooKeeper.pm',
+    'clean'         => { 'FILES' => 'build/check_zk_version.o' },
+    'BUILD_REQUIRES'=> {
+        'Test::Fatal' => 0,
+    },
 );
 
