@@ -24,7 +24,7 @@ sub zk_test_setup
 
     my $hosts = $ENV{'ZK_TEST_HOSTS'};
     unless (defined($hosts) and $hosts =~ /\S/) {
-        $hosts = 'localhost:0';
+        $hosts = 'localhost:2181';
         diag('no ZooKeeper hostnames specified in ZK_TEST_HOSTS env var, ' .
              "using $hosts") if ($verbose);
     }
