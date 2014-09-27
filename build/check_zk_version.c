@@ -17,9 +17,16 @@
  * limitations under the License.
  */
 
-#include "zookeeper_version.h"
+#ifdef USE_ZOOKEEPER_SUBDIR
+#include <zookeeper/zookeeper_version.h>
+#else
+#include <zookeeper_version.h>
+#endif
 
-#include "check_zk_version.h"
+#include <stdio.h>
 
-int main() {}
+int main() {
+    printf("%d.%d.%d", ZOO_MAJOR_VERSION, ZOO_MINOR_VERSION, ZOO_PATCH_VERSION);
+    return 0;
+}
 

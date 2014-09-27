@@ -21,6 +21,8 @@ use 5.008_008;
 use Config;
 use ExtUtils::MakeMaker;
 use Getopt::Long;
+use Try::Tiny;
+use version;
 
 my @zk_inc_paths;
 my @zk_lib_paths;
@@ -36,23 +38,8 @@ my $zk_lib_paths = join(' ', map("-L$_", @zk_lib_paths));
 $zk_inc_paths .= ' ' unless ($zk_inc_paths eq '');
 $zk_lib_paths .= ' ' unless ($zk_lib_paths eq '');
 
-my $cc = $Config{'cc'};
-my $check_file = 'build/check_zk_version';
 
-my $check_out =
-    qx($cc -c $zk_inc_paths -I. -c $check_file.c -o $check_file.o 2>&1);
-
-if ($?) {
-    if ($check_out =~ /zookeeper_version\.h/) {
-        die("Could not determine ZooKeeper version:\n\n$check_out");
-    }
-    else {
-        ## keep in sync with build/check_zk_version.h
-        die("Net::ZooKeeper requires at least ZooKeeper version 3.1.1\n");
-    }
-}
-
-WriteMakefile(
+my %MM_ARGS = (
     'INC'           => "$zk_inc_paths-I.",
     'LIBS'          => [ "$zk_lib_paths-lzookeeper_mt" ],
     'NAME'          => 'Net::ZooKeeper',
@@ -61,5 +48,44 @@ WriteMakefile(
     'BUILD_REQUIRES'=> {
         'Test::Fatal' => 0,
     },
+    'CONFIGURE_REQUIRES' => {
+        'version'     => 0,
+        'Try::Tiny'   => 0,
+    },
 );
 
+my $version = try {
+    return get_zookeeper_version();
+} catch {
+    my $original_error = $_;
+    return try {
+        # try including zookeeper/zookeeper_version.h
+        my $zk_version = get_zookeeper_version(define => "-DUSE_ZOOKEEPER_SUBDIR");
+        $MM_ARGS{DEFINE} = "-DUSE_ZOOKEEPER_SUBDIR";
+        return $zk_version;
+    } catch {
+        die $original_error;
+    };
+};
+die("Net::ZooKeeper requires at least ZooKeeper version 3.1.1. Found $version\n")
+    unless is_required_version($version);
+
+
+WriteMakefile(%MM_ARGS);
+
+
+sub get_zookeeper_version {
+    my (%args) = @_;
+    my $check_file = "build/check_zk_version";
+    my $define = $args{define} || "";
+    my $check_out =
+        qx($Config{'cc'} $define $zk_inc_paths $check_file.c -o $check_file 2>&1 && ./$check_file 2>&1);
+
+    die("Could not determine ZooKeeper version:\n\n$check_out") if $?;
+    return $check_out;
+}
+
+sub is_required_version {
+    my ($version) = @_;
+    return version->parse($version) >= version->parse('3.1.1');
+}

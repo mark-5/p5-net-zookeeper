@@ -28,9 +28,11 @@
 #include <limits.h>                     /* CHAR_BIT */
 #include <sys/time.h>                   /* gettimeofday() */
 
-#include "zookeeper.h"
-
-#include "build/check_zk_version.h"
+#ifdef USE_ZOOKEEPER_SUBDIR
+#include <zookeeper/zookeeper.h>
+#else
+#include <zookeeper.h>
+#endif
 
 
 #define PACKAGE_NAME "Net::ZooKeeper"
