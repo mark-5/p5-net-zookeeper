@@ -59,3 +59,7 @@ Revision history
 0.35  Jul 15, 2009
         - support multiple include and library locations
 
+0.36  Sep 28, 2014
+        - applied patches for RT issues 72661, 61290, and 91216
+          fixed segfaults caused by acl constants on mac os x
+          added support for using ZooKeeper headers installed in zookeeper/zookeeper.h

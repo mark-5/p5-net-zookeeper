@@ -26,7 +26,7 @@ package Net::ZooKeeper;
 require Exporter;
 require XSLoader;
 
-our $VERSION = '0.35';
+our $VERSION = '0.36';
 
 our @ISA = qw(Exporter);
 
@@ -1232,9 +1232,11 @@ The Apache ZooKeeper project's home page at
 L<http://hadoop.apache.org/zookeeper/> provides a wealth of detail
 on how to develop applications using ZooKeeper.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Chris Darroch, E<lt>chrisd@apache.orgE<gt>
+
+Mark Flickinger, E<lt>maf@cpan.orgE<gt>, is the current co-maintainer
 
 =head1 COPYRIGHT AND LICENSE
 

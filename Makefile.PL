@@ -52,6 +52,11 @@ my %MM_ARGS = (
         'version'     => 0,
         'Try::Tiny'   => 0,
     },
+    'META_MERGE'    => {
+        'resources' => {
+            'repository' => 'https://github.com/mark-5/p5-net-zookeeper.git',
+        },
+    },
 );
 
 my $version = try {
