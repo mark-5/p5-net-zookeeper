@@ -2647,15 +2647,11 @@ zkw_wait(zkwh, ...)
 
             gettimeofday(&curr_timeval, NULL);
 
-		if (end_timeval.tv_sec < curr_timeval.tv_sec) {
-			break;
-		}
-
-		if (end_timeval.tv_sec == curr_timeval.tv_sec) {
-			if (end_timeval.tv_usec <= curr_timeval.tv_usec) {
-				break;
-			}
-		}
+            if ((end_timeval.tv_sec < curr_timeval.tv_sec) ||
+                ((end_timeval.tv_sec == curr_timeval.tv_sec) &&
+                 (end_timeval.tv_usec <= curr_timeval.tv_usec))) {
+                break;
+            }
 
             pthread_cond_timedwait(&watch->cond, &watch->mutex,
                                    &wait_timespec);
