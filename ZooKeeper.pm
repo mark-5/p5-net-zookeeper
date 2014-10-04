@@ -26,7 +26,7 @@ package Net::ZooKeeper;
 require Exporter;
 require XSLoader;
 
-our $VERSION = '0.36';
+our $VERSION = '0.37';
 
 our @ISA = qw(Exporter);
 
@@ -1234,6 +1234,8 @@ on how to develop applications using ZooKeeper.
 =head1 AUTHOR
 
 Chris Darroch, E<lt>chrisd@apache.orgE<gt>
+
+Mark Flickinger, E<lt>maf@cpan.orgE<gt>, is the current co-maintainer
 
 =head1 COPYRIGHT AND LICENSE
 

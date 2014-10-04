@@ -63,3 +63,5 @@ Revision history
         - Fix zookeeper version check, but only warn since we haven't been enforcing it in a while
         - Look for zookeeper includes in some sane places by default
 
+0.37 Oct 4, 2014
+        - fix test failures when testing without a ZooKeeper connection
