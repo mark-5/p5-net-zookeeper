@@ -37,7 +37,7 @@ SKIP: {
     my $path = $zkh->create($node_path, 'foo',
                             'acl' => ZOO_OPEN_ACL_UNSAFE) if (defined($zkh));
 
-    skip 'no connection to ZooKeeper', 36 unless
+    skip 'no connection to ZooKeeper', 38 unless
         (defined($path) and $path eq $node_path);
 
 
