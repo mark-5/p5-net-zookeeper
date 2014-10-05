@@ -115,20 +115,20 @@ SKIP: {
          'NEXTKEY(): invalid handle');
 
     my @keys = keys(%{$zkh});
-    is(scalar(@keys), 7,
+    is(scalar(@keys), 8,
        'keys(): count of keys from handle');
 
     @keys = keys(%{$copy_zkh});
-    is(scalar(@keys), 7,
+    is(scalar(@keys), 8,
        'keys(): count of keys from copied dereferenced handle');
 
     is($attr->FIRSTKEY(), 'data_read_len',
        'FIRSTKEY(): retrieved first key using inner hash');
 
-    is($attr->NEXTKEY('session_id'), 'pending_watches',
+    is($attr->NEXTKEY('pending_watches'), 'state',
        'NEXTKEY(): retrieved last key using inner hash');
 
-    is($attr->NEXTKEY('pending_watches'), undef,
+    is($attr->NEXTKEY('state'), undef,
        'NEXTKEY(): undef returned after last key using inner hash');
 
     ok(scalar(%{$zkh}),

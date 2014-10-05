@@ -45,7 +45,7 @@
 #define MAX_KEY_NAME_LEN 16             /* "children_version" */
 
 #define NUM_ACL_ENTRY_KEYS 3
-#define NUM_KEYS 7
+#define NUM_KEYS 8
 #define NUM_STAT_KEYS 11
 #define NUM_WATCH_KEYS 3
 
@@ -128,7 +128,8 @@ static zk_key_t zk_keys[NUM_KEYS] = {
     {"hosts", 0, 0, 0, 0},
     {"session_timeout", 0, 0, 0, 0},
     {"session_id", 0, 0, 0, 0},
-    {"pending_watches", 0, 0, 0, 0}
+    {"pending_watches", 0, 0, 0, 0},
+    {"state", 0, 0, 0, 0}
 };
 
 static zk_key_t zk_stat_keys[NUM_STAT_KEYS] = {
@@ -1049,6 +1050,9 @@ zk_FETCH(attr_hash, attr_key)
         else if (strcaseEQ(key, "pending_watches")) {
             /* cleanup any completed watches not tied to a handle */
             val = newSVuv(_zk_release_watches(aTHX_ zk->first_watch, 0));
+        }
+        else if (strcaseEQ(key, "state")) {
+            val = newSViv(zoo_state(zk->handle));
         }
 
         if (val) {

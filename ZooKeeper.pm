@@ -551,6 +551,14 @@ C<get_children()>, or C<get()> methods.
 
 This attribute is B<read-only> and may not be modified.
 
+=item state
+
+The state of the Net::ZooKeeper connection at current time.
+See C<:states> for a list of the possible connection states.
+If zero, no connection has established yet.
+
+This attribute is B<read-only> and may not be modified.
+
 =back
 
 =head2 Net::ZooKeeper::Stat
