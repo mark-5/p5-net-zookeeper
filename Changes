@@ -65,3 +65,6 @@ Revision history
 
 0.37 Oct 4, 2014
         - fix test failures when testing without a ZooKeeper connection
+
+0.38 Nov 10, 2014
+        - add str_error() call for translating errors to human-readable strings
