@@ -68,6 +68,20 @@ WriteMakefile(
     'LIBS'         => [ "$zk_lib_paths-lzookeeper_mt" ],
     'NAME'         => 'Net::ZooKeeper',
     'VERSION_FROM' => 'ZooKeeper.pm',
-    'clean'        => { 'FILES' => 'build/check_zk_version.o' }
+    'clean'        => { 'FILES' => 'build/check_zk_version.o' },
+    'META_MERGE'   => {
+        'meta-spec' => { version => 2 },
+        resources => {
+            homepage   => "https://github.com/mark-5/p5-net-zookeeper",
+            bugtracker => {
+                web => "https://github.com/mark-5/p5-net-zookeeper/issues",
+            },
+            repository => {
+                web  => "https://github.com/mark-5/p5-net-zookeeper",
+                url  => "https://github.com/mark-5/p5-net-zookeeper.git",
+                type => 'git',
+            },
+        },
+    },
 );
 
