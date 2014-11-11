@@ -26,7 +26,7 @@ package Net::ZooKeeper;
 require Exporter;
 require XSLoader;
 
-our $VERSION = '0.37';
+our $VERSION = '0.38';
 
 our @ISA = qw(Exporter);
 
@@ -102,6 +102,40 @@ our %EXPORT_TAGS = (
 
     push @{$EXPORT_TAGS{'all'}},
         grep {!$tags{$_}++} @{$EXPORT_TAGS{$_}} foreach (keys(%EXPORT_TAGS));
+}
+
+# Provide human readable-ish error messages until the C API has strerr() built-in
+my %ERRORS = (
+	-1 => "ZSYSTEMERROR",
+	-2 => "ZRUNTIMEINCONSISTENCY",
+	-3 => "ZDATAINCONSISTENCY",
+	-4 => "ZCONNECTIONLOSS",
+	-5 => "ZMARSHALLINGERROR",
+	-6 => "ZUNIMPLEMENTED",
+	-7 => "ZOPERATIONTIMEOUT",
+	-8 => "ZBADARGUMENTS",
+	-9 => "ZINVALIDSTATE",
+	+
+	-100 => "ZAPIERROR",
+	-101 => "ZNONODE",
+	-102 => "ZNOAUTH",
+	-103 => "ZBADVERSION",
+	-108 => "ZNOCHILDRENFOREPHEMERALS",
+	-110 => "ZNODEEXISTS",
+	-111 => "ZNOTEMPTY",
+	-112 => "ZSESSIONEXPIRED",
+	-113 => "ZINVALIDCALLBACK",
+	-114 => "ZINVALIDACL",
+	-115 => "ZAUTHFAILED",
+	-116 => "ZCLOSING",
+	-117 => "ZNOTHING",
+	-118 => "ZSESSIONMOVED",
+);
+
+sub str_error
+{
+	my ($self) = @_;
+	return exists $ERRORS{$self->get_error} ? $ERRORS{$self->get_error} : "Unknown error";
 }
 
 our @EXPORT_OK = ( @{$EXPORT_TAGS{'all'}} );
@@ -276,6 +310,10 @@ error or server error has occurred and the client should probably
 close the connection by undefining the Net::ZooKeeper handle object
 and, if necessary, attempt to create a new connection to the
 ZooKeeper cluster.
+
+In order to get a human-readable version of the error code,
+simply call C<str_error()>, and it will return a string representing
+the last encountered error.
 
 =head2 Access Control
 
