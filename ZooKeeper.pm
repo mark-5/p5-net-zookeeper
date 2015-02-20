@@ -276,9 +276,9 @@ created by C<fork()>.
 =head2 Signals
 
 The ZooKeeper C API uses TCP connections to communicate with
-the ZooKeeper cluster.  These connections may generate SIGPIPE
+the ZooKeeper cluster.  In older ZooKeeper versions(before 3.4.0), these connections may generate SIGPIPE
 signals when they encounter errors, such as when a connection
-is terminated by a ZooKeeper server.  Therefore most applications
+is terminated by a ZooKeeper server.  Therefore applications using older ZooKeeper versions
 will want to trap or ignore SIGPIPE signals, e.g.:
 
   local $SIG{'PIPE'} = 'IGNORE';
