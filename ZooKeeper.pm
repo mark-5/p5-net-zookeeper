@@ -55,6 +55,7 @@ our %EXPORT_TAGS = (
         ZAUTHFAILED
         ZCLOSING
         ZNOTHING
+        ZSESSIONMOVED
     )],
     'node_flags' => [qw(
         ZOO_EPHEMERAL
