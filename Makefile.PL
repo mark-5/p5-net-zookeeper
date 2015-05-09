@@ -50,7 +50,7 @@ if ($?) {
     }
     else {
         ## keep in sync with build/check_zk_version.h
-        die("Net::ZooKeeper requires at least ZooKeeper version 3.1.1\n");
+        die("Net::ZooKeeper requires at least ZooKeeper version 3.2.0\n");
     }
 }
 

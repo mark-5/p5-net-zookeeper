@@ -369,7 +369,7 @@ required by ZooKeeper.
 
 =head2 Logging
 
-As of ZooKeeper version 3.1.1, logging in the C client code is
+As of ZooKeeper version 3.2.0, logging in the C client code is
 implemented with a single, shared file handle to which all
 of the internal POSIX threads write log messages; by default,
 this file handle is attached to STDERR.

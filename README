@@ -46,19 +46,12 @@ variable is defined, the root ZooKeeper path ("/") is used.
 
 DEPENDENCIES
 
-Version 3.1.1 of ZooKeeper is required at a minimum.
+Version 3.2.0 of ZooKeeper is required at a minimum.
 
-For version 3.1.1, you may also want to apply some of these
+For version 3.2.0, you may also want to apply some of these
 additional patches to the ZooKeeper C API code:
 
 https://issues.apache.org/jira/browse/ZOOKEEPER-262
-https://issues.apache.org/jira/browse/ZOOKEEPER-318
-
-For version 3.1.1, you may also want to apply some of these
-additional patches to the ZooKeeper C API code:
-
-https://issues.apache.org/jira/browse/ZOOKEEPER-262
-https://issues.apache.org/jira/browse/ZOOKEEPER-466
 
 This module requires that the multi-threaded version of the
 ZooKeeper C API client library be available on your system.
