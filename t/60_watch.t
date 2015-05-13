@@ -223,7 +223,9 @@ SKIP: {
             skip 'no connection to ZooKeeper', 9 unless
                 (defined($ret) and $ret);
 
-            my $watch = $zkh->watch('timeout' => 5000);
+            # value here is deliberately not an integer number of seconds,
+            # to exercise timeout handling
+            my $watch = $zkh->watch('timeout' => 4999);
 
 
             ## wait()
