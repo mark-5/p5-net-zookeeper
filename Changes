@@ -69,3 +69,8 @@ Revision history
 0.38 Nov 10, 2014
         - add str_error() call for translating errors to human-readable strings
         - add state() method from #72702
+
+0.39 May 13, 2014
+        - add ZSESSIONMOVED error constant
+        - bump ZooKeeper version dependency to 3.2.0
+        - Fix handling of non-integer-seconds watch timeouts
