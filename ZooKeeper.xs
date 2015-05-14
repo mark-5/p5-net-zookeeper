@@ -2635,6 +2635,10 @@ zkw_wait(zkwh, ...)
 
         end_timeval.tv_sec += timeout / 1000;
         end_timeval.tv_usec += (timeout % 1000) * 1000;
+        if (end_timeval.tv_usec >= 1000000) {
+            end_timeval.tv_usec -= 1000000;
+            end_timeval.tv_sec++;
+        }
 
         wait_timespec.tv_sec = end_timeval.tv_sec;
         wait_timespec.tv_nsec = end_timeval.tv_usec * 1000;
