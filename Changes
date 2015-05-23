@@ -70,7 +70,11 @@ Revision history
         - add str_error() call for translating errors to human-readable strings
         - add state() method from #72702
 
-0.39 May 13, 2014
+0.39 May 13, 2015
         - add ZSESSIONMOVED error constant
         - bump ZooKeeper version dependency to 3.2.0
         - Fix handling of non-integer-seconds watch timeouts
+
+0.40 May 23, 2015
+        - update docs better explain Net::ZooKeeper constructor error handling
+        - fix test failure from interference with other nodes
