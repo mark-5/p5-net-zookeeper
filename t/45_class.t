@@ -211,17 +211,14 @@ sub create
                                 'acl' => ZOO_OPEN_ACL_UNSAFE);
 }
 
-sub get_first_child
+sub get_children_absolute
 {
     my($self, $path) = @_;
 
     my @child_paths = $self->get_children($path);
 
-    if (@child_paths > 0) {
-        return $path . (($path =~ /\/$/) ? '' : '/') . $child_paths[0];
-    }
-
-    return undef;
+    my $prefix = $path . (($path =~ /\/$/) ? '' : '/');
+    return map {$prefix . $_} @child_paths;
 }
 
 sub stat
@@ -298,9 +295,10 @@ SKIP: {
         skip 'no connection to ZooKeeper', 1 unless
             (defined($path) and $path eq $node_path);
 
-        my $child_path = $sub_zkh->get_first_child($root_path);
-        is($child_path, $node_path,
-           'get_first_child(): retrieved first child with subclassed handle');
+        my @children = $sub_zkh->get_children_absolute($root_path);
+        my $child_exists =!! grep {$_ eq $node_path} @children;
+        ok($child_exists,
+           'get_children_absolute(): retrieved new child with subclassed handle');
     }
 
     my $sub_stat = $sub_zkh->stat();
