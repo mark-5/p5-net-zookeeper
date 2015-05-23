@@ -739,7 +739,7 @@ The following methods are defined for the Net::ZooKeeper class.
 
 Creates a new Net::ZooKeeper handle object and attempts to
 connect to the one of the servers of the given ZooKeeper
-cluster.  As described in the L</Internal POSIX Threads> and
+cluster. On failure, undef will be returned and the error message will be accessible in "$!". As described in the L</Internal POSIX Threads> and
 L</Connection Order> sections, the ZooKeeper client code will
 create an IO thread which maintains the connection with a
 regular "heartbeat" request.  In the event of a connection error
