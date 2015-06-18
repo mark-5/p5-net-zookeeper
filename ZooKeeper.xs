@@ -72,6 +72,7 @@ struct zk_watch_t {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     int done;
+    int watch_event_triggered;
     int ret;
     int event_type;
     int event_state;
@@ -163,11 +164,21 @@ static zk_key_t zk_watch_keys[NUM_WATCH_KEYS] = {
     {"state", 0, 0, 0, 0}
 };
 
+static int zk_ignore_session_events = 0;
 
 static void _zk_watcher(zhandle_t *handle, int type, int state,
                         const char *path, void *context)
 {
     zk_watch_t *watch_ctx = context;
+
+    bool is_session_event = type == ZOO_SESSION_EVENT;
+    if (is_session_event && zk_ignore_session_events) {
+        return;
+    }
+    if (!is_session_event) {
+        // mark this watch for garbage collection
+        watch_ctx->watch_event_triggered = 1;
+    }
 
     pthread_mutex_lock(&watch_ctx->mutex);
 
@@ -279,7 +290,9 @@ static unsigned int _zk_release_watches(pTHX_ zk_watch_t *first_watch,
 
         if (!final) {
             pthread_mutex_lock(&watch->mutex);
-            done = watch->done;
+            // only release watches if the watch event has been triggered
+            //   otherwise zookeeper may trigger it again
+            done = watch->watch_event_triggered;
             pthread_mutex_unlock(&watch->mutex);
         }
 
@@ -753,6 +766,13 @@ zk_set_deterministic_conn_order(flag)
 
         XSRETURN_EMPTY;
 
+void
+zk_set_ignore_session_events(flag)
+        bool flag
+    PPCODE:
+        zk_ignore_session_events = flag;
+
+        XSRETURN_EMPTY;
 
 void
 zk_new(package, hosts, ...)

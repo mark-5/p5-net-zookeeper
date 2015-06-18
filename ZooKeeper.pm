@@ -1144,6 +1144,8 @@ watch object as the value of a C<'watch'> option to a
 Net::ZooKeeper method; methods which accept a C<'watch'> option
 are C<exists()>, C<get_children()>, and C<get()>.
 
+By default, the C<wait()> method will return when session events(such as disconnecting and reconnecting from a server) are triggered. If a watch should ignore these session events, call C<Net::ZooKeeper::set_ignore_session_events(1)>.
+
 When the C<wait()> method is invoked with a C<'timeout'>
 option, it waits for no more than the number of milliseconds
 specified by the C<'timeout'> option.
@@ -1200,6 +1202,12 @@ The default false value indicates the list of servers will
 be randomly reordered prior to connection.
 
 See the L</Connection Order> section for more details.
+
+=item set_ignore_session_events()
+
+  Net::ZooKeeper::set_ignore_session_events(1);
+
+By default, ZooKeeper will trigger all pending watches for any session event(such as disconnecting and reconnecting to a server). If C<Net::ZooKeeper::set_ignore_session_events()> is set to a true value, session events will be ignored and C<wait()> calls will only return after the watch event is triggered or times out.
 
 =back
 
