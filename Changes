@@ -78,3 +78,7 @@ Revision history
 0.40 May 23, 2015
         - update docs better explain Net::ZooKeeper constructor error handling
         - fix test failure from interference with other nodes
+
+0.41 Jun 17, 2015
+        - fix deadlocks caused by premature watch garbage collection. (#5)
+        - added set_ignore_session_events function
