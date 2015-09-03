@@ -72,7 +72,7 @@ struct zk_watch_t {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     int done;
-    int watch_event_triggered;
+    int triggered;
     int ret;
     int event_type;
     int event_state;
@@ -177,7 +177,7 @@ static void _zk_watcher(zhandle_t *handle, int type, int state,
     }
     if (!is_session_event) {
         // mark this watch for garbage collection
-        watch_ctx->watch_event_triggered = 1;
+        watch_ctx->done = 1;
     }
 
     pthread_mutex_lock(&watch_ctx->mutex);
@@ -185,7 +185,7 @@ static void _zk_watcher(zhandle_t *handle, int type, int state,
     watch_ctx->event_type = type;
     watch_ctx->event_state = state;
 
-    watch_ctx->done = 1;
+    watch_ctx->triggered = 1;
 
     pthread_cond_signal(&watch_ctx->cond);
     pthread_mutex_unlock(&watch_ctx->mutex);
@@ -201,7 +201,8 @@ static void _zk_auth_completion(int ret, const void *data)
 
     watch_ctx->ret = ret;
 
-    watch_ctx->done = 1;
+    watch_ctx->done      = 1;
+    watch_ctx->triggered = 1;
 
     pthread_cond_signal(&watch_ctx->cond);
     pthread_mutex_unlock(&watch_ctx->mutex);
@@ -292,7 +293,7 @@ static unsigned int _zk_release_watches(pTHX_ zk_watch_t *first_watch,
             pthread_mutex_lock(&watch->mutex);
             // only release watches if the watch event has been triggered
             //   otherwise zookeeper may trigger it again
-            done = watch->watch_event_triggered;
+            done = watch->done;
             pthread_mutex_unlock(&watch->mutex);
         }
 
@@ -1251,13 +1252,13 @@ zk_add_auth(zkh, scheme, cert)
         if (ret == ZOK) {
             pthread_mutex_lock(&watch->mutex);
 
-            while (!watch->done) {
+            while (!watch->triggered) {
                 pthread_cond_wait(&watch->cond, &watch->mutex);
             }
 
             pthread_mutex_unlock(&watch->mutex);
 
-            if (watch->done) {
+            if (watch->triggered) {
                 ret = watch->ret;
             }
             else {
@@ -2628,7 +2629,7 @@ zkw_wait(zkwh, ...)
         zk_watch_t *watch;
         unsigned int timeout;
         struct timeval end_timeval;
-        int i, done;
+        int i, triggered;
         struct timespec wait_timespec;
     PPCODE:
         watch = _zkw_get_handle_outer(aTHX_ zkwh, NULL);
@@ -2665,7 +2666,7 @@ zkw_wait(zkwh, ...)
 
         pthread_mutex_lock(&watch->mutex);
 
-        while (!watch->done) {
+        while (!watch->triggered) {
             struct timeval curr_timeval;
 
             gettimeofday(&curr_timeval, NULL);
@@ -2680,11 +2681,11 @@ zkw_wait(zkwh, ...)
                                    &wait_timespec);
         }
 
-        done = watch->done;
+        triggered = watch->triggered;
 
         pthread_mutex_unlock(&watch->mutex);
 
-        if (done) {
+        if (triggered) {
             XSRETURN_YES;
         }
         else {
