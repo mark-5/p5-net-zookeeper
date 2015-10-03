@@ -611,6 +611,21 @@ BOOT:
 
     zoo_set_log_stream(NULL);
     zoo_set_debug_level(0);
+
+    HV* stash = gv_stashpv("Net::ZooKeeper", GV_ADDWARN);
+    newCONSTSUB(stash, "ZOO_VERSION", newSVpvf("%d.%d.%d\n",
+        ZOO_MAJOR_VERSION, ZOO_MINOR_VERSION, ZOO_PATCH_VERSION));
+#ifdef ZOO_HAVE_3_5_0
+    newCONSTSUB(stash, "ZWATCHERTYPE_CHILDREN", newSViv(ZWATCHERTYPE_CHILDREN));
+    newCONSTSUB(stash, "ZWATCHERTYPE_DATA", newSViv(ZWATCHERTYPE_DATA));
+    newCONSTSUB(stash, "ZWATCHERTYPE_ANY", newSViv(ZWATCHERTYPE_ANY));
+    newCONSTSUB(stash, "ZNOWATCHER", newSViv(ZNOWATCHER));
+#else
+    newCONSTSUB(stash, "ZWATCHERTYPE_CHILDREN", &PL_sv_undef);
+    newCONSTSUB(stash, "ZWATCHERTYPE_DATA", &PL_sv_undef);
+    newCONSTSUB(stash, "ZWATCHERTYPE_ANY", &PL_sv_undef);
+    newCONSTSUB(stash, "ZNOWATCHER", &PL_sv_undef);
+#endif
 }
 
 
@@ -2095,6 +2110,60 @@ zk_watch(zkh, ...)
 
         XSRETURN(1);
 
+#ifdef ZOO_HAVE_3_5_0
+
+int
+zk_remove_watchers(zkh, path, ...)
+        Net::ZooKeeper zkh
+        char *path
+    PREINIT:
+        int i = 0;
+        int local = 0;
+        int ret = ZOK;
+        zk_watch_t *watch = NULL;
+        watcher_fn watcher = NULL;
+        ZooWatcherType wtype = ZWATCHERTYPE_ANY;
+    PPCODE:
+        zk_t* zk = _zk_get_handle_outer(aTHX_ zkh);
+
+        if (items % 2) {
+            Perl_croak(aTHX_ "invalid number of arguments");
+        }
+
+        for (i = 2; i < items; i += 2) {
+            char *key = SvPV_nolen(ST(i));
+            if (strcaseEQ(key, "local")) {
+                local = SvUV(ST(i + 1));
+            } else if (strcaseEQ(key, "watch")) {
+                if (!SvROK(ST(i + 1)) || SvTYPE(SvRV(ST(i + 1))) != SVt_PVHV ||
+                    !sv_derived_from(ST(i + 1), WATCH_PACKAGE_NAME)) {
+                    Perl_croak(aTHX_ "watch is not a hash reference of "
+                                     "type " WATCH_PACKAGE_NAME);
+                }
+
+                watch = _zkw_get_handle_outer(aTHX_ (HV*) SvRV(ST(i + 1)), NULL);
+
+                if (!watch) {
+                    Perl_croak(aTHX_ "invalid watch handle");
+                }
+                watcher = _zk_watcher;
+            } else if (strcaseEQ(key, "wtype")) {
+                wtype = SvUV(ST(i + 1));
+            }
+        }
+
+        errno = 0;
+        ret = zoo_remove_watchers(zk->handle, path, wtype, watcher, watch, local);
+        zk->last_ret = ret;
+        zk->last_errno = errno;
+
+        if (ret == ZOK) {
+            XSRETURN_YES;
+        } else {
+            XSRETURN_NO;
+        }
+
+#endif // ZOO_HAVE_3_5_0
 
 MODULE = Net::ZooKeeper  PACKAGE = Net::ZooKeeper::Stat  PREFIX = zks_
 

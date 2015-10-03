@@ -22,9 +22,6 @@ use Config;
 use ExtUtils::MakeMaker;
 use Getopt::Long;
 
-my $ZOO_MAJOR_VERSION = 3;
-my $ZOO_REQUIRED_VERSION = qr{^$ZOO_MAJOR_VERSION\.\d+.\d+$}ismx;
-
 my @zk_inc_paths;
 my @zk_lib_paths;
 
@@ -32,6 +29,8 @@ GetOptions(
     'zookeeper-include=s' => \@zk_inc_paths,
     'zookeeper-lib=s' => \@zk_lib_paths
 );
+
+my $zk_defines   = '';
 
 my $zk_inc_paths = join(' ', map("-I$_", @zk_inc_paths));
 my $zk_lib_paths = join(' ', map("-L$_", @zk_lib_paths));
@@ -48,10 +47,6 @@ if ($?) {
     if ($check_out =~ /zookeeper_version\.h/) {
         die("Could not determine ZooKeeper version:\n\n$check_out");
     }
-    else {
-        ## keep in sync with build/check_zk_version.h
-        die("Net::ZooKeeper requires at least ZooKeeper version 3.2.0\n");
-    }
 }
 
 chomp(my $zk_ver = qx($check_file));
@@ -59,11 +54,16 @@ chomp(my $zk_ver = qx($check_file));
 if ($? >> 8 != 0) {
   die "Couldn't check zookeeper version: $zk_ver: $r";
 }
-elsif ($zk_ver !~ $ZOO_REQUIRED_VERSION) {
-  warn "Net::ZooKeeper requires ZooKeeper 3.x, found $zk_ver!";
+if (compare_versions($zk_ver, '3.2.0') < 0) {
+  warn "Net::ZooKeeper requires at least ZooKeeper version 3.2.0, found $zk_ver!";
+}
+if (compare_versions($zk_ver, '3.5.0') >= 0) {
+  $zk_defines = '-DZOO_HAVE_3_5_0';
 }
 
+
 WriteMakefile(
+    'DEFINE'       => $zk_defines,
     'INC'          => "$zk_inc_paths-I.",
     'LIBS'         => [ "$zk_lib_paths-lzookeeper_mt" ],
     'NAME'         => 'Net::ZooKeeper',
@@ -85,3 +85,18 @@ WriteMakefile(
     },
 );
 
+sub compare_versions {
+    my ($a, $b) = @_;
+    my @a_parts = split /\./, $a;
+    my @b_parts = split /\./, $b;
+
+    my $max_parts = @a_parts > @b_parts ? @a_parts : @b_parts;
+    for my $i (1 .. $max_parts) {
+        my $a_part     = $a_parts[$i];
+        my $b_part     = $b_parts[$i];
+        my $comparison = $a_part <=> $b_part;
+        return $comparison if $comparison != 0;
+    }
+
+    return 0;
+}

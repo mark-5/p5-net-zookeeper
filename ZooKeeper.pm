@@ -56,6 +56,7 @@ our %EXPORT_TAGS = (
         ZCLOSING
         ZNOTHING
         ZSESSIONMOVED
+        ZNOWATCHER
     )],
     'node_flags' => [qw(
         ZOO_EPHEMERAL
@@ -95,7 +96,13 @@ our %EXPORT_TAGS = (
         ZOO_LOG_LEVEL_WARN
         ZOO_LOG_LEVEL_INFO
         ZOO_LOG_LEVEL_DEBUG
-    )]
+    )],
+    'wtypes' => [qw(
+        ZWATCHERTYPE_CHILDREN
+        ZWATCHERTYPE_DATA
+        ZWATCHERTYPE_ANY
+    )],
+
 );
 
 {
@@ -1120,6 +1127,16 @@ See also the C<watch_timeout> attribute, and the C<timeout>
 attribute and C<wait()> method of the Net::ZooKeeper::Watch
 class.
 
+=item remove_watchers()
+
+  $ret = $zkh->remove_watchers($path);
+  $ret = $zkh->remove_watchers($path,
+                               'local' => $local,
+                               'watch' => $watch,
+                               'wtype' => $wtype);
+
+Remove watchers for the given path. Returns true upon success, false otherwise.
+
 =back
 
 =head2 Net::ZooKeeper::Stat
@@ -1273,6 +1290,11 @@ C<Net::ZooKeeper::set_log_level()> function.  The available
 log levels are, from least to most verbose, C<ZOO_LOG_LEVEL_OFF>
 (the default), C<ZOO_LOG_LEVEL_ERROR>, C<ZOO_LOG_LEVEL_WARN>,
 C<ZOO_LOG_LEVEL_INFO>, and C<ZOO_LOG_LEVEL_DEBUG>.
+
+=item :wtypes
+
+The ZooWatcherType enums, which may be passed in the
+C<'wtype'> option to the C<remove_watchers()> method().
 
 =item :all
 
