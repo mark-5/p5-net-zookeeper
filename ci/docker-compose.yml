@@ -1,0 +1,21 @@
+---
+code:
+  build: ..
+  dockerfile: ci/Dockerfile
+  command: /bin/true
+  environment:
+    ZK_TEST_HOSTS: zookeeper:2181
+  links:
+    - zookeeper
+
+wait-for-it:
+  image: willwill/wait-for-it
+  command: zookeeper:2181
+  links:
+    - zookeeper
+
+zookeeper:
+  image: zookeeper:$ZOOKEEPER_VERSION
+  ports:
+    - "2181"
+
