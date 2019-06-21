@@ -1,0 +1,34 @@
+---
+language: perl
+sudo: required
+services:
+  - docker
+
+install:
+  - make -f ci/Makefile
+
+script:
+  - make -f ci/Makefile test
+
+after_script:
+  - make -f ci/Makefile clean
+
+env:
+  matrix:
+    - ZOOKEEPER_VERSION=3.3.6  PERL_VERSION=5.10.1
+    - ZOOKEEPER_VERSION=3.3.6  PERL_VERSION=5.10.1-threaded
+    - ZOOKEEPER_VERSION=3.3.6  PERL_VERSION=5.32.0
+    - ZOOKEEPER_VERSION=3.3.6  PERL_VERSION=5.32.0-threaded
+    - ZOOKEEPER_VERSION=3.4.14 PERL_VERSION=5.10.1
+    - ZOOKEEPER_VERSION=3.4.14 PERL_VERSION=5.10.1-threaded
+    - ZOOKEEPER_VERSION=3.4.14 PERL_VERSION=5.32.0
+    - ZOOKEEPER_VERSION=3.4.14 PERL_VERSION=5.32.0-threaded
+    - ZOOKEEPER_VERSION=3.5.5  PERL_VERSION=5.10.1
+    - ZOOKEEPER_VERSION=3.5.5  PERL_VERSION=5.10.1-threaded
+    - ZOOKEEPER_VERSION=3.5.5  PERL_VERSION=5.32.0
+    - ZOOKEEPER_VERSION=3.5.5  PERL_VERSION=5.32.0-threaded
+    - ZOOKEEPER_VERSION=3.6.2  PERL_VERSION=5.10.1
+    - ZOOKEEPER_VERSION=3.6.2  PERL_VERSION=5.10.1-threaded
+    - ZOOKEEPER_VERSION=3.6.2  PERL_VERSION=5.32.0
+    - ZOOKEEPER_VERSION=3.6.2  PERL_VERSION=5.32.0-threaded
+
