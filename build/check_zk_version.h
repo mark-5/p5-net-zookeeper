@@ -18,8 +18,9 @@
  */
 
 /* keep in sync with Makefile.PL */
-#if !defined(ZOO_MAJOR_VERSION) || ZOO_MAJOR_VERSION != 3 || \
+#if !defined(ZOO_VERSION)
+# if !defined(ZOO_MAJOR_VERSION) || ZOO_MAJOR_VERSION != 3 || \
     !defined(ZOO_MINOR_VERSION) || ZOO_MINOR_VERSION < 2
-#error "Net::ZooKeeper requires at least ZooKeeper version 3.2.0"
+#  error "Net::ZooKeeper requires at least ZooKeeper version 3.2.0"
+# endif
 #endif
-
