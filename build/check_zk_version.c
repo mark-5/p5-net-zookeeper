@@ -23,7 +23,11 @@
 #include "check_zk_version.h"
 
 int main() {
+#ifdef ZOO_VERSION
+  printf("%s\n", ZOO_VERSION);
+#else
   printf("%d.%d.%d\n", ZOO_MAJOR_VERSION, ZOO_MINOR_VERSION, ZOO_PATCH_VERSION);
+#endif
   return 0;
 }
 

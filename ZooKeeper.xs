@@ -28,6 +28,7 @@
 #include <limits.h>                     /* CHAR_BIT */
 #include <sys/time.h>                   /* gettimeofday() */
 
+#define THREADED
 #include <zookeeper/zookeeper.h>
 
 #include "build/check_zk_version.h"
