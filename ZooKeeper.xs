@@ -30,6 +30,7 @@
 
 #define THREADED
 #include <zookeeper/zookeeper.h>
+#undef THREADED
 
 #include "build/check_zk_version.h"
 
