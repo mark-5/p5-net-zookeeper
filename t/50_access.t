@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+use version 0.77;
 use File::Spec;
 use Test::More tests => 40;
 use Storable qw(dclone);
@@ -169,7 +170,9 @@ SKIP: {
     # FinalRequestProcessor).  We must do the same for the comparison
     # to succeed.
     my $redacted_digest_acl = dclone($digest_acl);
-    $redacted_digest_acl->[1]->{id} =~ s/:.*/:x/;
+    if ( version->parse(ZOO_VERSION) >= version->parse('3.4.14') ) {
+        $redacted_digest_acl->[1]->{id} =~ s/:.*/:x/;
+    }
 
     @acl = ('abc');
     @acl = $zkh->get_acl($acl_node_path);

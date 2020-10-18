@@ -612,6 +612,15 @@ BOOT:
 
     zoo_set_log_stream(NULL);
     zoo_set_debug_level(0);
+
+    HV* stash = gv_stashpv("Net::ZooKeeper", GV_ADDWARN);
+    newCONSTSUB(stash, "ZOO_VERSION",
+#ifdef ZOO_VERSION
+        newSVpv(ZOO_VERSION, 0)
+#else
+        newSVpvf("%d.%d.%d", ZOO_MAJOR_VERSION, ZOO_MINOR_VERSION, ZOO_PATCH_VERSION)
+#endif
+    );
 }
 
 
