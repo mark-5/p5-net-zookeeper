@@ -103,6 +103,10 @@ our %EXPORT_TAGS = (
 
     push @{$EXPORT_TAGS{'all'}},
         grep {!$tags{$_}++} @{$EXPORT_TAGS{$_}} foreach (keys(%EXPORT_TAGS));
+
+    push @{$EXPORT_TAGS{'all'}}, qw(
+        ZOO_VERSION
+    );
 }
 
 # Provide human readable-ish error messages until the C API has strerr() built-in
