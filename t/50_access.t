@@ -16,8 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+use version 0.77;
 use File::Spec;
 use Test::More tests => 40;
+use Storable qw(dclone);
 
 BEGIN { use_ok('Net::ZooKeeper', qw(:all)) };
 
@@ -163,9 +165,18 @@ SKIP: {
         $! eq ''),
        'get_acl(): undef returned for non-extant node');
 
+    # The test is not running as ADMIN, which means that the server
+    # returns "redacted" ACLs (see ZOOKEEPER-1392 and OpCode.getACL in
+    # FinalRequestProcessor).  We must do the same for the comparison
+    # to succeed.
+    my $redacted_digest_acl = dclone($digest_acl);
+    if ( version->parse(ZOO_VERSION) >= version->parse('3.4.14') ) {
+        $redacted_digest_acl->[1]->{id} =~ s/:.*/:x/;
+    }
+
     @acl = ('abc');
     @acl = $zkh->get_acl($acl_node_path);
-    is_deeply(\@acl, $digest_acl,
+    is_deeply(\@acl, $redacted_digest_acl,
               'get_acl(): retrieved digest ACL');
 
     my $stat = $zkh->stat();

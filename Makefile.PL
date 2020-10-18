@@ -71,6 +71,13 @@ WriteMakefile(
     'clean'        => { 'FILES' => 'build/check_zk_version.o' },
     'META_MERGE'   => {
         'meta-spec' => { version => 2 },
+        prereqs => {
+            test => {
+                requires => {
+                    version => '0.77',
+                },
+            },
+        },
         resources => {
             homepage   => "https://github.com/mark-5/p5-net-zookeeper",
             bugtracker => {
