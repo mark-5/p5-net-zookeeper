@@ -36,8 +36,9 @@ if ( qv($zookeeper_version_number) >= qv(3.4.14) ) {
 
 my %build = (
     command  => 'true',
-    flags    => '',
+    cflags   => '',
     packages => [],
+    plflags  => '',
 );
 if ( qv($zookeeper_version_number) >= qv(3.6.0) ) {
     # jute needs to be explicitly compiled for 3.6.0+
@@ -45,12 +46,16 @@ if ( qv($zookeeper_version_number) >= qv(3.6.0) ) {
     $build{packages} = [ 'maven' ];
 } else {
     # fix for gcc 8 (ZOOKEEPER-3302) only in 3.6.0+
-    $build{flags} = sprintf(q{'CFLAGS=%s'}, join(' ', qw(
+    $build{cflags} = sprintf(q{'CFLAGS=%s'}, join(' ', qw(
         -g -O2 -D_GNU_SOURCE
         -Wno-error=format-overflow
         -Wno-error=nonnull
         -Wno-error=stringop-truncation
     )));
+}
+if ( $ENV{SASL2} ) {
+    $build{plflags} = '--with-sasl2';
+    push @{ $build{packages} }, 'libsasl2-dev';
 }
 
 my @system_packages = qw(
@@ -88,7 +93,7 @@ RUN cd /opt/zookeeper \\
  && echo 'AC_DEFUN([CHECK_CPPUNIT], [true])' >> acinclude.m4 \\
  && autoreconf -if \\
  && ./configure \\
- && make install $build{flags} \\
+ && make install $build{cflags} \\
  && ldconfig
 
 RUN test -d /usr/local/include/zookeeper \\
@@ -99,7 +104,7 @@ COPY --from=perl:$perl_version /usr/local/lib/perl5/ /usr/local/lib/perl5/
 
 WORKDIR /code
 COPY . /code
-RUN perl Makefile.PL \\
+RUN perl Makefile.PL $build{plflags} \\
  && cpanm --quiet --notest --with-develop --with-all-features --installdeps . \\
  && make
 
