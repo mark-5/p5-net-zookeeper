@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+use strict;
 use 5.008_008;
 
 use Config;
@@ -39,33 +40,76 @@ my $zk_lib_paths = join(' ', map("-L$_", @zk_lib_paths));
 $zk_inc_paths .= ' ' unless ($zk_inc_paths eq '');
 $zk_lib_paths .= ' ' unless ($zk_lib_paths eq '');
 
-my $cc = $Config{'cc'};
+
+my $lddlflags = $Config{'lddlflags'};
+eval {
+    require Alien::libzookeeper;
+    $zk_inc_paths   .= ' ' . Alien::libzookeeper->cflags;
+    my $libs         = Alien::libzookeeper->libs;
+    my $libs_static  = Alien::libzookeeper->libs_static;
+    if ( $libs ne $libs_static ) {
+        # We can statically link against libzookeeper -- this likely means that
+        # we are compiling against a private version built by Alien::libzookeeper.
+        # To link statically, we need to pass arguments to `ld`, not to the C
+        # compiler, and we need to drop the dynamic version:
+        $_ =~ s/-lzookeeper(?:_mt)?\b// for $libs, $libs_static;
+        $lddlflags  .= ' ' . $libs_static;
+    }
+    $zk_lib_paths   .= ' ' . $libs;
+    1;
+} or do {
+    my $e = $@ || '';
+    # ignore errors from Alien::libzookeeper.  nice if it's available,
+    # but not required.
+};
+
+my @errors;
 my $check_file = 'build/check_zk_version';
+foreach my $extra_zk_lib ( '', '-lzookeeper', '-lzookeeper_mt' ) {
+    my $cc = $Config{'cc'};
 
-my $check_out = qx($cc $zk_inc_paths $zk_lib_paths -I. -o $check_file $check_file.c 2>&1);
+    my $check_out = qx($cc $zk_inc_paths $zk_lib_paths $extra_zk_lib -I. -o $check_file $check_file.c 2>&1);
 
-if ($?) {
-    if ($check_out =~ /zookeeper_version\.h/) {
-        die("Could not determine ZooKeeper version:\n\n$check_out");
+    my $compile_status    = $?;
+    my $compile_exit_code = $compile_status >> 8;
+    if ( $compile_exit_code != 0 ) {
+        # It failed -- save the output and status code, we will use them
+        # if all tries fail:
+        if ($check_out =~ /zookeeper_version\.h/) {
+            push @errors, "Could not determine ZooKeeper version:\n\n$check_out";
+        }
+        else {
+            ## keep in sync with build/check_zk_version.h
+            push @errors, "Net::ZooKeeper requires at least ZooKeeper version 3.2.0: $check_out\n";
+        }
+        next;
     }
-    else {
-        ## keep in sync with build/check_zk_version.h
-        die("Net::ZooKeeper requires at least ZooKeeper version 3.2.0: $check_out\n");
+
+    chomp(my $zk_ver = qx($check_file));
+
+    my $exit_code = $? >> 8;
+    if ($exit_code != 0) {
+        push @errors, "Couldn't check zookeeper version: $zk_ver: $exit_code";
     }
+    elsif ($zk_ver !~ $ZOO_REQUIRED_VERSION) {
+        # TODO: should we try other alternatives here?
+        warn "Net::ZooKeeper requires ZooKeeper 3.x, found $zk_ver!";
+    }
+
+    # libzookeeper is usable!  Update $zk_lib_paths if needed, and carry on:
+    $zk_lib_paths .= ' ' . $extra_zk_lib;
+    @errors        = ();
+    last;
 }
 
-chomp(my $zk_ver = qx($check_file));
-
-if ($? >> 8 != 0) {
-  die "Couldn't check zookeeper version: $zk_ver: $r";
-}
-elsif ($zk_ver !~ $ZOO_REQUIRED_VERSION) {
-  warn "Net::ZooKeeper requires ZooKeeper 3.x, found $zk_ver!";
+if ( @errors ) {
+    die join "\n", @errors;
 }
 
 WriteMakefile(
-    'INC'          => "$zk_inc_paths-I.",
-    'LIBS'         => [ "$zk_lib_paths-lzookeeper_mt" ],
+    'INC'          => "$zk_inc_paths -I.",
+    'LIBS'         => $zk_lib_paths,
+    'LDDLFLAGS'    => $lddlflags,
     'NAME'         => 'Net::ZooKeeper',
     'VERSION_FROM' => 'ZooKeeper.pm',
     'clean'        => { 'FILES' => 'build/check_zk_version.o' },
@@ -75,6 +119,12 @@ WriteMakefile(
             test => {
                 requires => {
                     version => '0.77',
+                },
+            },
+            configure => {
+                # optionally use Alien::libzookeeper, but not a hard requirement:
+                recommends => {
+                    'Alien::libzookeeper' => '0.02',
                 },
             },
         },
