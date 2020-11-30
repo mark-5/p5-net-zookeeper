@@ -17,11 +17,23 @@
 # limitations under the License.
 
 use strict;
-use 5.008_008;
+use v5.15;
 
 use Config;
 use ExtUtils::MakeMaker;
+use Text::ParseWords qw(shellwords);
 use Getopt::Long;
+
+sub prepare_lddlflags {
+    my ($lddlflags) = @_;
+    # `-Wl,-z,now` breaks static linking to libmariadbclient.a, and
+    # the perl you get from pacman in ArchLinux has that by default
+    # in lddlflags.
+    $lddlflags =~ s<,-z[,= ]now><>g;
+    $lddlflags =~ s<,--as-needed\b><>g;
+    $lddlflags =~ s<-Wl\s>< >g; # did we remove every linker option?
+    return $lddlflags;
+}
 
 my $ZOO_MAJOR_VERSION = 3;
 my $ZOO_REQUIRED_VERSION = qr{^$ZOO_MAJOR_VERSION\.\d+.\d+$}ismx;
@@ -34,28 +46,53 @@ GetOptions(
     'zookeeper-lib=s' => \@zk_lib_paths
 );
 
-my $zk_inc_paths = join(' ', map("-I$_", @zk_inc_paths));
-my $zk_lib_paths = join(' ', map("-L$_", @zk_lib_paths));
+my @archive_after;
+my $makemaker_libs = [];
+my $makemaker_inc  = join(' ', map("-I$_", @zk_inc_paths));
 
-$zk_inc_paths .= ' ' unless ($zk_inc_paths eq '');
-$zk_lib_paths .= ' ' unless ($zk_lib_paths eq '');
+my $ccflags   = $Config{'ccflags'} // '';
+my $lddlflags = prepare_lddlflags($Config{'lddlflags'} // '');
 
+$lddlflags .= ' ' . join ' ', @zk_lib_paths;
 
-my $lddlflags = $Config{'lddlflags'};
 eval {
     require Alien::libzookeeper;
-    $zk_inc_paths   .= ' ' . Alien::libzookeeper->cflags;
-    my $libs         = Alien::libzookeeper->libs;
-    my $libs_static  = Alien::libzookeeper->libs_static;
-    if ( $libs ne $libs_static ) {
+    $makemaker_inc .= ' ' . Alien::libzookeeper->cflags;
+    if ( Alien::libzookeeper->install_type eq 'share' ) {
+        my $makemaker_libs;
         # We can statically link against libzookeeper -- this likely means that
         # we are compiling against a private version built by Alien::libzookeeper.
-        # To link statically, we need to pass arguments to `ld`, not to the C
-        # compiler, and we need to drop the dynamic version:
-        $_ =~ s/-lzookeeper(?:_mt)?\b// for $libs, $libs_static;
-        $lddlflags  .= ' ' . $libs_static;
+        my $libs = Alien::libzookeeper->libs_static || Alien::libzookeeper->lib;
+        # cmake/OSX bug: -lz gets transformed into
+        #   -l/abs/path/to/libz.tbd
+        # in systems with Apple's "built-in dynamic linker cache"
+        $libs =~ s<\B-l/></>g;
+
+        my $lib_ext = $Config{lib_ext};
+        foreach my $maybe_lib ( shellwords($libs) ) {
+            if ( $maybe_lib =~ m/\B-l(\S+)/ ) {
+                # -lfoo
+                push @$makemaker_libs, $maybe_lib;
+            }
+            elsif ( $maybe_lib =~ m<-L(\S+)> ) {
+                my $lib_dir = $1;
+                # /path/to/libs
+                # add '-Wl,-rpath=$dir'
+                $libs = '-Wl,-rpath,' . $lib_dir . ' ' . $libs;
+            }
+            elsif ( $maybe_lib =~ m<^/.+$lib_ext$> ) {
+                # .a file in pkg-config --libs output -- this needs to come after the -o
+                push @archive_after, $maybe_lib;
+            }
+        }
+
+        $lddlflags .= ' ' . $libs;
     }
-    $zk_lib_paths   .= ' ' . $libs;
+    else {
+        # Installing against a libzookeeper provided by the OS; just dump the flags
+        # we got and continue:
+        $lddlflags .= ' ' . Alien::libzookeeper->lib;
+    }
     1;
 } or do {
     my $e = $@ || '';
@@ -68,7 +105,8 @@ my $check_file = 'build/check_zk_version';
 foreach my $extra_zk_lib ( '', '-lzookeeper', '-lzookeeper_mt' ) {
     my $cc = $Config{'cc'};
 
-    my $check_out = qx($cc $zk_inc_paths $zk_lib_paths $extra_zk_lib -I. -o $check_file $check_file.c 2>&1);
+    my $cmd = "$cc $makemaker_inc $lddlflags $extra_zk_lib -I. -o $check_file $check_file.c 2>&1";
+    my $check_out = qx($cmd);
 
     my $compile_status    = $?;
     my $compile_exit_code = $compile_status >> 8;
@@ -96,8 +134,8 @@ foreach my $extra_zk_lib ( '', '-lzookeeper', '-lzookeeper_mt' ) {
         warn "Net::ZooKeeper requires ZooKeeper 3.x, found $zk_ver!";
     }
 
-    # libzookeeper is usable!  Update $zk_lib_paths if needed, and carry on:
-    $zk_lib_paths .= ' ' . $extra_zk_lib;
+    # libzookeeper is usable!  Update $lddlflags if needed, and carry on:
+    $lddlflags .= ' ' . $extra_zk_lib;
     @errors        = ();
     last;
 }
@@ -107,9 +145,11 @@ if ( @errors ) {
 }
 
 WriteMakefile(
-    'INC'          => "$zk_inc_paths -I.",
-    'LIBS'         => $zk_lib_paths,
+    'INC'          => "$makemaker_inc -I.",
+    'LIBS'         => $makemaker_libs,
     'LDDLFLAGS'    => $lddlflags,
+    'CCFLAGS'      => $ccflags,
+    'PERL_ARCHIVE_AFTER' => join(' ', @archive_after),
     'NAME'         => 'Net::ZooKeeper',
     'VERSION_FROM' => 'ZooKeeper.pm',
     'clean'        => { 'FILES' => 'build/check_zk_version.o' },
@@ -124,7 +164,7 @@ WriteMakefile(
             configure => {
                 # optionally use Alien::libzookeeper, but not a hard requirement:
                 recommends => {
-                    'Alien::libzookeeper' => '0.02',
+                    'Alien::libzookeeper' => '0.03',
                 },
             },
         },
