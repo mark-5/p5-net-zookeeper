@@ -50,8 +50,9 @@ my @archive_after;
 my $makemaker_libs = [];
 my $makemaker_inc  = join(' ', map("-I$_", @zk_inc_paths));
 
-my $ccflags   = $Config{'ccflags'} // '';
-my $lddlflags = prepare_lddlflags($Config{'lddlflags'} // '');
+my $ccflags    = $Config{'ccflags'} // '';
+my $cccdlflags = $Config{'cccdlflags'} // ''; # -fPIC
+my $lddlflags  = prepare_lddlflags($Config{'lddlflags'} // '');
 
 $lddlflags .= ' ' . join ' ', @zk_lib_paths;
 
@@ -105,7 +106,7 @@ my $check_file = 'build/check_zk_version';
 foreach my $extra_zk_lib ( '', '-lzookeeper', '-lzookeeper_mt' ) {
     my $cc = $Config{'cc'};
 
-    my $cmd = "$cc $makemaker_inc $lddlflags $extra_zk_lib -I. -o $check_file $check_file.c 2>&1";
+    my $cmd = "$cc $makemaker_inc $lddlflags $cccdlflags $extra_zk_lib -I. -o $check_file $check_file.c 2>&1";
     my $check_out = qx($cmd);
 
     my $compile_status    = $?;
@@ -118,7 +119,7 @@ foreach my $extra_zk_lib ( '', '-lzookeeper', '-lzookeeper_mt' ) {
         }
         else {
             ## keep in sync with build/check_zk_version.h
-            push @errors, "Net::ZooKeeper requires at least ZooKeeper version 3.2.0: $check_out\n";
+            push @errors, "Net::ZooKeeper requires at least ZooKeeper version 3.2.0:\n$cmd\n$check_out\n";
         }
         next;
     }
