@@ -18,15 +18,17 @@
  */
 
 #include <stdio.h>
+#include <zookeeper/zookeeper.h>
 #include <zookeeper/zookeeper_version.h>
 
 #include "check_zk_version.h"
 
 int main() {
+  zoo_set_debug_level(0); // will fail if linking wasn't successful
 #ifdef ZOO_VERSION
   puts(ZOO_VERSION);
 #else
-  printf("%d.%d.%d\n", ZOO_MAJOR_VERSION, ZOO_MINOR_VERSION, ZOO_PATCH_VERSION);
+  printf("version = '%d.%d.%d'\n", ZOO_MAJOR_VERSION, ZOO_MINOR_VERSION, ZOO_PATCH_VERSION, ZOK);
 #endif
   return 0;
 }
