@@ -59,41 +59,34 @@ $lddlflags .= ' ' . join ' ', @zk_lib_paths;
 eval {
     require Alien::libzookeeper;
     $makemaker_inc .= ' ' . Alien::libzookeeper->cflags;
-    if ( Alien::libzookeeper->install_type eq 'share' ) {
-        my $makemaker_libs;
-        # We can statically link against libzookeeper -- this likely means that
-        # we are compiling against a private version built by Alien::libzookeeper.
-        my $libs = Alien::libzookeeper->libs_static || Alien::libzookeeper->lib;
-        # cmake/OSX bug: -lz gets transformed into
-        #   -l/abs/path/to/libz.tbd
-        # in systems with Apple's "built-in dynamic linker cache"
-        $libs =~ s<\B-l/></>g;
+    my $libs = Alien::libzookeeper->install_type eq 'share'
+         ? Alien::libzookeeper->libs_static || Alien::libzookeeper->libs
+         : Alien::libzookeeper->libs
+    ;
+    # cmake/OSX bug: -lz gets transformed into
+    #   -l/abs/path/to/libz.tbd
+    # in systems with Apple's "built-in dynamic linker cache"
+    $libs =~ s<\B-l/></>g;
 
-        my $lib_ext = $Config{lib_ext};
-        foreach my $maybe_lib ( shellwords($libs) ) {
-            if ( $maybe_lib =~ m/\B-l(\S+)/ ) {
-                # -lfoo
-                push @$makemaker_libs, $maybe_lib;
-            }
-            elsif ( $maybe_lib =~ m<-L(\S+)> ) {
-                my $lib_dir = $1;
-                # /path/to/libs
-                # add '-Wl,-rpath=$dir'
-                $libs = '-Wl,-rpath,' . $lib_dir . ' ' . $libs;
-            }
-            elsif ( $maybe_lib =~ m<^/.+$lib_ext$> ) {
-                # .a file in pkg-config --libs output -- this needs to come after the -o
-                push @archive_after, $maybe_lib;
-            }
+    my $lib_ext = $Config{lib_ext};
+    foreach my $maybe_lib ( shellwords($libs) ) {
+        if ( $maybe_lib =~ m/\B-l(\S+)/ ) {
+            # -lfoo
+            push @$makemaker_libs, $maybe_lib;
         }
+        elsif ( $maybe_lib =~ m<-L(\S+)> ) {
+            my $lib_dir = $1;
+            # /path/to/libs
+            # add '-Wl,-rpath=$dir'
+            $libs = '-Wl,-rpath,' . $lib_dir . ' ' . $libs;
+        }
+        elsif ( $maybe_lib =~ m<^/.+$lib_ext$> ) {
+            # .a file in pkg-config --libs output -- this needs to come after the -o
+            push @archive_after, $maybe_lib;
+        }
+    }
 
-        $lddlflags .= ' ' . $libs;
-    }
-    else {
-        # Installing against a libzookeeper provided by the OS; just dump the flags
-        # we got and continue:
-        $lddlflags .= ' ' . Alien::libzookeeper->lib;
-    }
+    $lddlflags .= ' ' . $libs;
     1;
 } or do {
     my $e = $@ || '';
