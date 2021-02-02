@@ -16,9 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-use version 0.77;
 use File::Spec;
-use Test::More tests => 40;
+use Test::More tests => 41;
 use Storable qw(dclone);
 
 BEGIN { use_ok('Net::ZooKeeper', qw(:all)) };
@@ -167,17 +166,21 @@ SKIP: {
 
     # The test is not running as ADMIN, which means that the server
     # returns "redacted" ACLs (see ZOOKEEPER-1392 and OpCode.getACL in
-    # FinalRequestProcessor).  We must do the same for the comparison
-    # to succeed.
-    my $redacted_digest_acl = dclone($digest_acl);
-    if ( version->parse(ZOO_VERSION) >= version->parse('3.4.14') ) {
-        $redacted_digest_acl->[1]->{id} =~ s/:.*/:x/;
-    }
+    # FinalRequestProcessor).
+    my $cloned_digest_acl = dclone($digest_acl);
+    my $digest_id = delete $cloned_digest_acl->[1]->{id};
 
     @acl = ('abc');
     @acl = $zkh->get_acl($acl_node_path);
-    is_deeply(\@acl, $redacted_digest_acl,
+    my $got_id = delete $acl[1]->{id};
+    is_deeply(\@acl, $cloned_digest_acl,
               'get_acl(): retrieved digest ACL');
+    {
+	# Handle both "redacted" and "non-redacted" ACLs.
+	my($pre,$post) = $digest_id =~ m{^(.*:)(.*)};
+	my $rx = '^' . quotemeta($1) . '(' . quotemeta($2) . '|x)$';
+	like $got_id, qr{$rx}, 'retrieved digest ACL - id';
+    }
 
     my $stat = $zkh->stat();
 
